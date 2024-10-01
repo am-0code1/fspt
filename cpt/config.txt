@@ -1,0 +1,208 @@
+/---------------------------------------------------------------
+/ Any line starting with / or # is treated as a comment line
+/ You can add comments to the file for future reference and/or 
+/ to comment and uncomment some variable assignments.
+/---------------------------------------------------------------
+
+/--------------------------------------------------
+/ Project directory config
+/--------------------------------------------------
+dir_base ./
+
+/-------------------------------------------------------
+/ OpenMp
+/-------------------------------------------------------
+num_threads 1
+
+/-------------------------------------------------------
+/ Verbose
+/
+/ opt_verbose: whether to log using std::cout
+/ opt_output: whether to write files
+/
+/ these allow to turn off writing tasks when evaluating 
+/ computational performance of algorithm.
+/-------------------------------------------------------
+opt_output 1
+opt_verbose 1
+
+/-------------------------------------------------------
+/ Reading files: 1. mesh, 2. solution, and 3. particles
+/ The input files to be put in `inp` inside dir_base
+/ solution file for cell center is optional.
+/ There are multiple options to introduce particles into
+/ the system (one or multiple of the options can be used
+/ at the same time):
+/ - Providing a particles file. 
+/ - Providing the required parameters for using the 
+/ `set_particle_source` function.
+/ - Introducing a streakline (not implemented yet).
+/-------------------------------------------------------
+filename_mesh mesh.msh
+filename_sol_nodes sol_nodes
+#filename_sol_cells sol_cells
+
+/--------------------------------------------------------------
+/ Particles file
+/--------------------------------------------------------------
+#particles_config_filename config_particles.txt
+
+/-------------------------------------------------------
+/ To use a delimeter that includes one or multiple space, place
+/ the desired delimeter between quotes (" or '). Some of valid
+/ delimeters:
+/ ", "
+/ ', '
+/ ' '
+/ ,
+/ "   " for multiple (three here) spaces
+/ '	' for tab
+/-------------------------------------------------------
+particles_config_delimiter '	'
+
+/config verbose
+report_every_num_line 1e5
+
+
+/--------------------------------------------------
+/ Search algorithm config
+/
+/ `opt_original_ASG`: 
+/ If true, the original variant of ASG search is used to locate hosting cell. 
+/ Otherwise, the modified variant (two - step spiral) is used.
+/
+/ `opt_bin_cell_check_center_only`:
+/ Two implementation approaches to add cells to bins to be used in the original ASG variant: 
+/ 1. (`opt_bin_cell_check_center_only`=true) center of cell to be examined : each cell resides only in one bin. 
+/ 2. (`opt_bin_cell_check_center_only`=false) each node of cell to be examined : each cell can reside in one or multiple bins.  
+/
+/
+/ Regardless of using the original ASG or its modified algorithm, 
+/ bin size can be determined from the grid size for more efficient search.
+/ To do so, either not provide any value for `bins`, or pass at least a zero for one of bin components, e.g. bins 0 0.
+/ At the same time, provide a value for `bin_len_dimensionless`, which aims at setting the bins size at 
+/ `bin_len_dimensionless` times a characteristic lenght of grid, e.g., maximum grid size.
+/--------------------------------------------------
+
+/algorithm type
+opt_original_ASG 1
+opt_bin_cell_check_center_only 0
+
+/bins
+#bins 900 100
+bin_len_dimensionless 1
+
+/config for finding closest node to a position
+half_width_search_window 1
+allowed_tolerance_node_position_snap 1e-11
+
+/finding cell encompassing a position
+encompassing_cell_spiral_level 1
+nondim_criterion_area_ratio 1e-11
+
+
+/--------------------------------------------------
+/ Reading solution file at cells center (Optional)
+/--------------------------------------------------
+/ if solution at cell center is not provided, the props are interpolated from the nodes.
+opt_read_sol_at_cells_center false
+
+/strict_mode is relevant only when opt_read_sol_at_cells_center==true
+strict_mode true
+
+/nondim_allowed_tolerance_cell_center_position_snap is relevant only when opt_read_sol_at_cells_center==true
+nondim_allowed_tolerance_cell_center_position_snap 1.0e-1
+
+
+/--------------------------------------------------
+/ Report files for mesh, solution, and bins to be 
+/ used for checking the correctness of reading 
+/ mesh and solution files and the process of assigning
+/ nodes to bins.
+/--------------------------------------------------
+/report files
+opt_report_mesh 0
+opt_report_mesh_ordered 0
+opt_report_sol_nodes 0
+opt_report_sol_cells 0
+opt_report_bins 0
+opt_report_nodes_of_zones_one_file_per_zone 0
+opt_report_nodes_of_zones_single_file 0
+
+
+/-------------------------------------------
+/ Particle tracking related variables
+/-------------------------------------------
+time_duration 1.0e3
+max_iter 1e4
+
+verbose_every_num_step 1e3
+props_eval_spiral_level 0
+
+
+#---------------------------------------------------------------------------------------------
+# Stokes regimes-- different integration schemes & Stokes-dependent adaptive time step configs
+#---------------------------------------------------------------------------------------------
+/Small Stokes time integration scheme is applied if `(stokes_number < stokes_number_threshold or opt_time_integration_for_small_stokes)`
+/By default, `opt_time_integration_for_small_stokes=false`, wherein small Stokes time integration scheme is applied only if `stokes_number < stokes_number_threshold`
+/If `opt_time_integration_for_small_stokes` is set to true,  small Stokes time integration scheme is enforced throughout the simulation
+/
+/`fixed_time_step` is used if adaptive time step is not applicable.
+/`L_ref` is needed for Stokes-dependent adaptive time step. In case `L_ref` is provided:
+/	1. If `Vel_ref` is provided, it is used to evaluate a fixed Stokes number
+/	2. Otherwise, local cell-based velocity magnitude is used to evaluate a local Stokes number
+/--------------------------------------------------------------------------------------------------	
+time_step_over_taw_relax 2e-1
+stokes_number_threshold 1e-1
+#fixed_time_step 1e-3
+
+L_ref 14e-6
+#Vel_ref 3e-2
+
+opt_time_integration_for_small_stokes false
+
+
+#------------------------
+# integration scheme only
+# for small stokes mode
+#------------------------
+opt_one_step_euler true
+#opt_rk4 true
+
+
+#---------------------------------
+# wall-particle interactions
+#---------------------------------
+num_points_on_perimeter 16
+elastic_reflection_coeff 1
+
+
+/------------------------------
+/source of particle injection
+/------------------------------
+opt_release_at_flow_speed false
+
+
+n_particles 1
+range_diameter 1e-6 1e-6
+range_density 1.e3 1.e3
+
+
+/`source_pos` is used to specify single point source of injection
+#source_pos 14e-6 42e-6
+
+
+/`pos_end_1` and `pos_end_2` are used to specify a streakline injection source
+#pos_end_1 14e-06 42e-6
+#pos_end_2 14e-06 266e-6
+
+
+
+/------------------------------------------------------
+/ wall zone type(s): 
+/ zone types in the mesh file to be considered as wall.
+/ For example:
+/	wall_zone_type 2 7 10
+/------------------------------------------------------
+wall_zone_type 5
+
